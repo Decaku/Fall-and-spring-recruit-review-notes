@@ -1,0 +1,46 @@
+[toc]
+
+# 同步IO模型
+
+## BIO
+BIO全名是blocking IO,即阻塞型IO。使用BIO进行网络通信，先创建套接字，然后绑定端口，监听套接字。接着主线程会进行accept系统调用，在这一步，如果没有client连接请求，主线程会阻塞，直到收到连接请求才会解除阻塞。收到一个client连接后，程序会new一个新的线程用来处理此连接后的事件，如通过recv系统调用接收数据。这些线程内部在没有收到数据时仍是阻塞的。
+
+BIO实现起来非常简单，但却会消耗相当多的系统资源。比如，当有大量连接请求到来时，会同时创建许多线程，有可能会撑爆内存。同时，线程的创建和销毁以及大量线程间切换而产生的时钟中段会为CPU带来严重的负载。
+
+## NIO
+NIO全名是nonblocking IO,即非阻塞IO。server首先还是创建套接字，绑定端口，监听套接字。与BIO相比，主线程在调用accept系统调用时不再是阻塞的，如果没有client连接，会继续进行后面的逻辑。反之，当有client连接时，会把client加入一个list里。在接收数据时，会通过遍历list的方式，对于每个client都调用一遍recv系统调用。
+
+NIO与BIO相比，只用一个线程处理所有的连接事件。但是NIO采用了过多的系统调用，因为application在每次循环里会遍历所有client并调用recv指令。在使用system call的时候，操作系统会发生软中断cpu会从用户态切换到内核态，这样的切换次数过多也会产生cpu的负载问题。
+
+## 多路IO复用器
+
+### select和poll
+多路IO复用器是通过操作系统内核提供的指令来实现的。它的目的在于能快速监测到状态发生变化的fd,但在实际读写数据的时候并不参与。
+
+select和poll允许每次向kernel中传入一个fd数组，kernel会遍历fd数组，然后向application返回已经就绪的fd数组。此后application遍历返回数组，建立连接或读写数据。与NIO相比，select和poll减少了system call的次数，因此性能得到提高。
+
+select和poll原理相同，只不过select多了一个fd数组最大长度不能超过1024的限制。
+
+select和poll的问题在于可能会出现fd数组很大，已经就绪的fd数量很少的情况，但select和poll每次还是需要向kernel中传入整个fd数组。
+
+### Epoll
+
+ epoll是一种多路IO复用器，也是java中默认的selector。有关epoll的系统调用有三个，它们分别是epoll_create, epoll_ctl, epoll_wait。linux网络通信，仍然离不开基础的三步，创建套接字，绑定端口，监听套接字。
+
+ epoll_create会在kernel中创建一块空间，你可以把它认为是一块缓存，它用来存储将要监听的文件描述符。然后，epoll_ctl会把之前创建的listen套接字拷贝到kernel里，并为它绑定accept事件，当有新的client连接请求到来时，该事件会被触发，且对应的fd会被拷贝到kernel里的返回区。上层的application通过epoll_wait系统调用得知状态发生变化的fd，并取走。然后，application会为新连接进来的client创建新的fd，为它绑定recv事件，并拷贝到kernel空间中。此后就是循环的过程，当绑定事件触发后，application通过epoll_wait获得状态发生变化的fd取走，并接收数据。
+
+ epoll解决了poll和select需要重复拷贝fd到kernel的问题。并且，它底层采用了事件驱动(event poll)，也就是hash,当绑定的事件到来时，fd状态自动发生变化，无需像poll和select那样轮询fd数组在获得已就绪的IO。
+
+ epoll也存在问题，application处理状态发生变化的fd时，仍然是通过主线程轮询的方式，所以无法很快地响应kernel中返回区的fd，两次epoll_wait中可能已经间隔了相当长的一段时间。
+
+
+## 信号驱动IO
+信号驱动IO，是application事先向kernel中注册回调函数。kernel在IO就绪以后，会执行回调，向application发送SIGIO信号,通知application执行接下来的数据拷贝工作。它与epoll的区别在于epoll需要通过epoll_wait轮询的方式来得到已经就绪的IO。 
+
+信号驱动IO通常只用在UDP协议上，因为UDP协议中能触发SIGIO信号的事件只有两种，有数据报可读或套接字错误。而TCP协议中能触发SIGIO的事件太多，application不能直接获取到就绪的事件类型和事件源fd。
+
+
+# 异步IO模型
+简称AIO。它与信号驱动IO的区别在于，IO读写交给内核完成。在kernel把数据拷贝到application后，才会发出通知。所以它与前面四种IO模型的最大区别在于，在读写数据时主线程不会被阻塞。
+
+但是这种模型在IO处理过程中出现异常用户程序无法干预。同时，这种IO模型还增加了开发难度和并发控制的难度。

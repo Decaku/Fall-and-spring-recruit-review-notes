@@ -1,0 +1,1 @@
+这部分可以结合深入理解Java虚拟机第二章以及https://www.zhihu.com/question/64586462/answer/1586089031 高赞回答来看。

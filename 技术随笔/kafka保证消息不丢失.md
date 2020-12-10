@@ -10,7 +10,7 @@ producer.send(msg)发送消息是异步的，也就是发送完以后就不会�
 
 # Consumer
 
-维持先消费消息，在更新offset，否则先更新offset后consumer宕机就丢失了一条消息。但是先消费消息可能带来重复消费同一条消息的问题，比如消费完以后还没来得及提交offset，consumer宕机了。
+维持先消费消息，再更新offset，否则先更新offset后consumer宕机就丢失了一条消息。但是先消费消息可能带来重复消费同一条消息的问题，比如消费完以后还没来得及提交offset，consumer宕机了。
 
 
 

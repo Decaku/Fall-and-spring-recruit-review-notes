@@ -1,5 +1,7 @@
 RocketMQ可以保证业务数据的强一致性。
 
+aliyun doc: https://help.aliyun.com/product/29530.html?spm=a2c4g.11186623.6.540.7b443e5cYf1s5o
+
 # 事务消息
 
 考虑一个分布式微服务的场景。用户下单支付以后，先调用订单服务更新订单的数据库，然后发送消息到MQ，支付模块拉取消息消费扣款。但是这两个服务有可能出现一个成功一个失败的情况，导致数据不一致。
@@ -31,4 +33,6 @@ try {
 
 
 **reference link:https://juejin.cn/post/6844904106532962311** 
+
+
 

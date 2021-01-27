@@ -396,7 +396,6 @@ int main()
 
     ``` cpp
     // 看这个数据范围直接暴力就可以了，但是我不知道为什么lc上的难度是hard，而且评论区有人说n^2过不了的...
-    
     class Solution {
     public:
         vector<int> kthSmallestPrimeFraction(vector<int>& arr, int k) {
@@ -411,6 +410,43 @@ int main()
                 return x.first * y.second < x.second * y.first;
             });
             return vector<int>({nums[k - 1].first, nums[k - 1].second});
+        }
+    };
+    
+    // 如果面试的话写暴力肯定不好，说一个二分的做法
+    // 考虑二分答案mid，验证数组可以组成多少个<=mid的分数，二分到最后一定能得到一个mid，数组正好能组成k个<=mid的分数，取最大的那个即可，check的时候利用单调性，枚举分母，分子一定是单调不降的。
+    class Solution {
+    public:
+        vector<int> kthSmallestPrimeFraction(vector<int>& arr, int k) {
+            double l = 0, r = 1.0;
+            vector<int>ans(2);
+            while(r - l > 1e-9) {
+                double mid = (l + r) / 2.0;
+                vector<int>res = check(mid, arr);
+                if(res[0] < k) {
+                    l = mid;
+                } else {
+                    r = mid;
+                    ans[0] = res[1]; ans[1] = res[2];
+                }
+            }
+            return ans;
+        }
+    
+        vector<int> check(double mid, vector<int>& arr) {
+            vector<int> res;
+            int count = 0, x = 0, y = 0, i = -1;
+            for(int j = 1; j < arr.size(); ++j) {
+                while(arr[i + 1] <= arr[j] * mid) {
+                    ++i;
+                }
+                count += i + 1;
+                if(i >= 0 && arr[i] * y >= arr[j] * x) {
+                    x = arr[i]; y = arr[j];
+                }
+            }
+            res.push_back(count); res.push_back(x); res.push_back(y);
+            return res;
         }
     };
     ```
@@ -531,7 +567,189 @@ int main()
 
 21. 表达式求值，用后缀表达式... follow up：支持三元运算符
 
+22. 384 随机洗牌
 
+    ``` cpp
+        vector<int> shuffle() {
+            int  n = card.size();
+            for(int i = n - 1; i >= 0; --i) {
+                int index = random() % (i + 1); // random一个0到i的index
+                swap(card[index], card[i]);
+            }
+            return card;
+        }
+    // Fisher–Yates 算法，复杂度On
+    // 为什么random的时候不是random一个[0, n - 1]的下标，如果random的范围是整个数组，那么一共有n^n种结果，而本质不同的排列个数是n!,当n>=2时，n!不能整除n^n，这说明每个排列一定不可能等概率出现，那么不是完全随机的。
+    ```
+
+    23. 889
+
+    24. 给一个二叉树和一些结点，求这些结点的lca
+
+        ``` cpp
+        // 考虑树dp，记dp[u]为u的子树里有多少个给的结点，那么只要找到第一个结点包含所有给的结点，这个点就是lca，这样只要dfs一次就可以了
+        ```
+
+    25. 886 二分图 
+
+        ``` cpp
+        // 其实就是要你判断图里存不存在奇环，可以染色法+dfs，但是要注意这题图可能不联通，需要对每个块dfs
+        class Solution {
+        public:
+            int color[2010];
+            vector<int>g[2010];
+            bool flg = true;
+            void dfs(int u, int c) {
+                color[u] = c;
+                for(auto v: g[u]) {
+                    if(color[v] == color[u]) {
+                        flg = false;
+                        return ;
+                    } else if(color[v] == -1) {
+                        dfs(v, 1 - c);
+                    }
+                }
+            }
+            bool possibleBipartition(int N, vector<vector<int>>& dislikes) {
+                for(int i = 1; i <= N; ++i) {
+                    color[i] = -1;
+                }
+                for(auto dislike : dislikes) {
+                    int u = dislike[0], v = dislike[1];
+                    g[u].push_back(v); g[v].push_back(u);
+                }
+                for(int i = 1; i <= N; ++i) {
+                    if(color[i] == -1) {
+                        dfs(i, 0);
+                    }
+                }
+                return flg;
+            }
+        };
+        ```
+
+    26. 368 
+
+        ``` cpp
+        // n^2建图，然后按照拓扑序dp
+        class Solution {
+        public:
+            vector<int> largestDivisibleSubset(vector<int>& nums) {
+                int n = nums.size();
+                sort(nums.begin(), nums.end());
+                vector<int>pre(n, -1), dp(n, 1), deg(n, 0);
+                vector<vector<int>>g(n, vector<int>());
+                for(int i = 0; i < n; ++i) {
+                    for(int j = i + 1; j < n; ++j) {
+                        if(nums[j] % nums[i] == 0) {
+                            g[i].push_back(j);
+                            deg[j]++;
+                        }
+                    }
+                }
+                queue<int>q;
+                for(int i = 0; i < n; ++i) {
+                    if(deg[i] == 0) {
+                        q.push(i);
+                    }
+                }
+                int cnt = 0;
+                while(!q.empty()) {
+                    int u = q.front(); q.pop();
+                    for(auto v : g[u]) {
+                        deg[v]--;
+                        if(deg[v] == 0) {
+                            q.push(v);
+                        }
+                        if(dp[u] + 1 > dp[v]) {
+                            dp[v] = dp[u] + 1;
+                            pre[v] = u;
+                        }
+                    }
+                }
+        
+                int index = max_element(dp.begin(), dp.end()) - dp.begin();
+                vector<int> ans;
+                while(index != -1) {
+                    ans.push_back(nums[index]);
+                    index = pre[index];
+                }
+                return ans;
+            }
+        };
+        ```
+
+    27. 给定一个deque（大小1e5），每次pop头部两个element，大的push_back，小的push_front，问第m次(1e18)操作结果？
+
+        ``` cpp
+        // 暂时没想到怎么做
+        // 找到原题了，是一场div2的C，最后问的是第m次操作以后队列前两个数的值...
+        // 这样想，当队首变成最小值的时候，之后就会形成n-1的循环节，然后队首什么时候会变成最小值呢？不会超过n次，其中n是队列大小 cf上的题号是 1180C
+        ```
+
+    28. 143 重排链表
+    
+        ``` cpp
+        // 空间常数的做法，先找到链表中点，把中点右边的链表整体反转，然后把前后链表合并
+        class Solution {
+        public:
+            // 空间复杂度O1,先找到中间结点，然后反转右链表，最后合并两个链表
+            void reorderList(ListNode* head) {
+                if(!head || !head->next) {
+                    return ;
+                }
+                ListNode* middle = middleNode(head);
+                ListNode* r = middle->next;
+                r = reverseList(r);
+                middle->next = NULL;
+                mergeList(head, r);
+            }
+        
+            ListNode* middleNode(ListNode* head) {
+                ListNode* low = head;
+                ListNode* fast = head;
+                while(fast->next && fast->next->next) {
+                    low = low->next;
+                    fast = fast->next->next;
+                }
+                return low;
+            }
+            ListNode* reverseList(ListNode* head) {
+                ListNode* now = head;
+                ListNode* pre = NULL;
+                while(now) {
+                    ListNode* next = now->next;
+                    now->next = pre;
+                    pre = now;
+                    now = next;
+                }
+                return pre;
+            }
+            ListNode* mergeList(ListNode* l, ListNode* r) {
+                ListNode* nextL = l;
+                ListNode* nextR = r;
+                ListNode* res = l;
+                while(l && r) {
+                    nextL = l->next;
+                    nextR = r->next;
+        
+                    l->next = r;
+                    r->next = nextL;
+                    l=nextL;
+                    r=nextR;
+                }
+                return res;
+            }
+        };
+        ```
+    
+    29. 表达式求值
+    
+        ``` cpp
+        // 做法是转后缀表达式然后求值
+        ```
+    
+        
 
 后面还有一些数学题和智力题。。。
 

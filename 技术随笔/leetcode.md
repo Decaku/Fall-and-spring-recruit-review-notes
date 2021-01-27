@@ -284,6 +284,41 @@ public:
   };
   ```
 
+
+
+
+* 根据前序和后序还原
+
+  ``` cpp
+  // 这个答案不是唯一的
+  class Solution {
+  public:
+      unordered_map<int, int>um;
+      TreeNode* constructFromPrePost(vector<int>& pre, vector<int>& post) {
+          for(int i = 0; i < post.size(); ++i) {
+              um[post[i]] = i;
+          }
+          int n = pre.size();
+          return build(pre, post, 0, n - 1, 0, n - 1);
+      }
+  
+      TreeNode* build(vector<int>& pre, vector<int>& post, int preL, int preR, int postL, int postR) {
+          if(preL > preR || postL > postR) {
+              return NULL;
+          }
+          TreeNode* root = new TreeNode(pre[preL]);
+          if(preL == preR) {
+              return root;
+          }
+          int index = um[pre[preL + 1]];
+          int sizeL = index - postL + 1;
+          root->left = build(pre, post, preL + 1, preL + sizeL, postL, postL + sizeL - 1);
+          root->right = build(pre, post, preL + sizeL + 1, preR, postL + sizeL, postR - 1);
+          return root;
+      }
+  };
+  ```
+
   
 
 * 链表判环
@@ -464,6 +499,48 @@ public:
           }
       }
   };
+  ```
+
+* LRU
+
+  ``` cpp
+  class LRUCache {
+  public:
+      LRUCache(int capacity) {
+          Capacity = capacity;
+      }
+      
+      int get(int key) {  // get的时候必须更新顺序 所以需要调用put
+          if(um.find(key) == um.end()) {
+              return -1;
+          }
+          put(key, um[key]->second);
+          return um[key]->second;
+      }
+      
+      void put(int key, int value) {
+          if(um.find(key) != um.end()) {
+              recent.erase(um[key]);
+          } else if(um.size() == Capacity) {
+              um.erase(recent.back().first);
+              recent.pop_back();
+          }
+  
+          recent.push_front({key, value});
+          um[key] = recent.begin();
+      }
+  private:
+      int Capacity;
+      unordered_map<int, list<pair<int, int>>::iterator >um;
+      list<pair<int, int>>recent; // 头部是最近的 尾是最晚的
+  };
+  
+  ```
+
+* LFU
+
+  ``` cpp
+  // 有点麻烦，先空着吧，毕竟这个应该问的不多
   ```
 
   

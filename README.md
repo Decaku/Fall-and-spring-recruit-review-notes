@@ -1,6 +1,4 @@
-# 复习笔记
-这个仓库记录个人在2020年秋招到2021年春招过程中的复习笔记。
-
-个人求职意向为后端/基础架构研发。
-
-希望能对各位有帮助吧
+# Review notes
+* This repo records personal knowledge of job search.
+* My job search intention is back-end or infrastructure.
+* Hope to help you.

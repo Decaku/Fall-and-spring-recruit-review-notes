@@ -42,3 +42,11 @@ MySQL缓存？
 
 
 
+
+
+数据库分库分表？
+
+看看美团的这篇实践文章 https://tech.meituan.com/2016/11/18/dianping-order-db-sharding.html
+
+
+

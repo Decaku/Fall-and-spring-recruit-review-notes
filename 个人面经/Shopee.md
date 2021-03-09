@@ -25,6 +25,8 @@
 
 * 大部分都能答出来，所以就记一下完全不知道的
 * 如果数据库密码泄露并且hacker知道了密码存储的hash算法，怎么做能避免被hacker建立字典暴力撞库而得到原文密码（关键词：加盐hash）
+* 
+* 在https中，server会通过签名的方式传递公钥给client，client用public key 加密数据发给server，那么之后server是怎么安全reponse的，一个做法是client也生成一个public key，签名发给server，但是https真是这么做的吗？（其实答案就是client再传递一个密钥给server，以后他们都用这个密钥进行对称加密。。。）
 * 有一个池子里有一些球，怎么快速统计数量，不能数（没懂这题啥意思）
 
 # HR Call
